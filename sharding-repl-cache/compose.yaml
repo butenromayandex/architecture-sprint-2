@@ -1,5 +1,23 @@
 name: mongo-sharding-repl
 services:
+  pymongo_api:
+    container_name: pymongo_api
+    build:
+      context: api_app
+      dockerfile: Dockerfile
+    image: kazhem/pymongo_api:1.0.0
+    depends_on:
+      - mongos_router
+    ports:
+      - 8080:8080
+    environment:
+      MONGODB_URL: "mongodb://mongos_router:27020"
+      MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://173.17.0.201:6379"
+    networks:
+      app-network:
+        ipv4_address: 173.17.0.2
+
   #  //сервер конфигурации
   configSrv:
     image: mongo:latest # docker образ
@@ -24,7 +42,8 @@ services:
       interval: 5s
       start_period: 10s
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.3
 
   #  //роутер
   mongos_router:
@@ -50,7 +69,8 @@ services:
       interval: 5s
       start_period: 10s
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.5
 
   #  //1-й шард
   shard1:
@@ -79,7 +99,8 @@ services:
       - configSrv
       - mongos_router
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.10
 
   #  Реплика 1 первого шарда
   shard1-repl1:
@@ -102,8 +123,12 @@ services:
       test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
       interval: 5s
       start_period: 10s
+    depends_on:
+      - configSrv
+      - mongos_router
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.11
 
   #  Реплика 2 первого шарда
   shard1-repl2:
@@ -126,8 +151,12 @@ services:
       test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
       interval: 5s
       start_period: 10s
+    depends_on:
+      - configSrv
+      - mongos_router
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.12
 
   #  //2-й шард
   shard2:
@@ -156,7 +185,8 @@ services:
       - configSrv
       - mongos_router
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.20
 
   #  Реплика 1 второго шарда
   shard2-repl1:
@@ -179,8 +209,12 @@ services:
       test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
       interval: 5s
       start_period: 10s
+    depends_on:
+      - configSrv
+      - mongos_router
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.21
 
   #  Реплика 2 второго шарда
   shard2-repl2:
@@ -203,25 +237,12 @@ services:
       test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
       interval: 5s
       start_period: 10s
-    networks:
-      - app-network
-
-  pymongo_api:
-    container_name: pymongo_api
-    build:
-      context: api_app
-      dockerfile: Dockerfile
-    image: kazhem/pymongo_api:1.0.0
     depends_on:
+      - configSrv
       - mongos_router
-    ports:
-      - 8080:8080
-    environment:
-      MONGODB_URL: "mongodb://mongos_router:27020"
-      MONGODB_DATABASE_NAME: "somedb"
-      REDIS_URL: "redis://redis_1:6379"
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.22
 
   redis_1:
     image: "redis:latest"
@@ -233,7 +254,8 @@ services:
       - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.201
 
   redis_2:
     image: "redis:latest"
@@ -245,7 +267,8 @@ services:
       - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.202
 
   redis_3:
     image: "redis:latest"
@@ -257,7 +280,8 @@ services:
       - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.203
 
   redis_4:
     image: "redis:latest"
@@ -269,7 +293,8 @@ services:
       - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.204
 
   redis_5:
     image: "redis:latest"
@@ -281,7 +306,8 @@ services:
       - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.205
 
   redis_6:
     image: "redis:latest"
@@ -293,7 +319,8 @@ services:
       - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
-      - app-network
+      app-network:
+        ipv4_address: 173.17.0.206
 
 networks:
   app-network:
@@ -301,7 +328,7 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 173.17.0.0/24
+        - subnet: 173.17.0.0/16
 
 volumes:
   config-data:
